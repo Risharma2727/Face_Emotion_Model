@@ -1,0 +1,1 @@
+GroupEmoW Facial Emotion Model Accuracy: 68.03%
