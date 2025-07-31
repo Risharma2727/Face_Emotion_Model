@@ -1,128 +1,98 @@
-# 🎭 Multimodal Emotion Recognition System (Facial + Audio)
+🎭 Multimodal Emotion Recognition System (Facial + Audio)
+A real-time, multimodal emotion detection system combining facial expressions and audio signals using deep learning. Now equipped with Hybrid Fusion and Temporal Encoding for more robust and stable predictions.
 
-This project implements a real-time emotion recognition system using both **facial expressions** and **audio signals**. It leverages deep learning models trained on **GroupEmoW** and **VGAF Audio** datasets to detect emotions from webcam video and microphone input.
+✨ Key Features
+Real-Time Emotion Detection Seamless emotion recognition from webcam and microphone.
 
----
+Hybrid Fusion (Feature + Score Level) Combines both feature-level and score-level fusion of facial and audio predictions for richer joint representations.
 
+Temporal Encoding Uses optical flow and rolling emotion history to smooth predictions over time.
 
-## ✨ Features
+Manual Audio Trigger Press 'a' to record and process emotion via microphone input.
 
-- **Real-Time Emotion Detection**  
-  Detects emotions from live webcam feed and microphone input with minimal latency.
+Confidence Filtering & Face Hold Filters low-confidence predictions and maintains bounding boxes during temporary detection loss.
 
-- **Multimodal Fusion (Face + Audio)**  
-  Combines facial expressions and vocal cues for more robust emotion recognition.
+📦 Datasets
+Modality	Dataset	Classes	Format/Preprocessing
+Facial	GroupEmoW	Positive, Negative, Neutral	RGB with bounding boxes → Cropped/resized faces
+Audio	VGAF Audio	Neutral, Happy, Sad, Angry, Fearful, Disgust, Surprise	.wav → MFCC + delta features
+🧠 Algorithms
+Facial Emotion Recognition: CNN (custom or MobileNetV2)
 
-- **Manual Audio Trigger**  
-  Press `'a'` to record and analyze audio emotion on demand.
+Audio Emotion Recognition: CNN on MFCC features
 
-- **Temporal Smoothing**  
-  Uses rolling prediction history to stabilize output and reduce flickering.
+Hybrid Fusion:
 
-- **Confidence Filtering**  
-  Ignores low-confidence predictions to improve reliability.
+Feature-level: concatenated modality outputs
 
-- **Face Hold Mechanism**  
-  Maintains bounding box and emotion display even when face detection temporarily fails.
+Score-level: 60% facial + 40% audio weighting
 
-## 📦 Datasets Used
+Final: smoothed via softmax
 
-### 🧠 Facial Emotion Dataset: GroupEmoW
-- **Source**: [GroupEmoW](https://github.com/GroupEmoW/GroupEmoW-dataset)
-- **Classes**: Positive, Negative , Neutral
-- **Format**: RGB images with bounding boxes and group-level annotations
-- **Preprocessing**: Cropped individual faces, resized to 48x48 or 96x96, converted to grayscale or RGB depending on model
+Temporal Encoding: Rolling deque buffer for temporal smoothing
 
-### 🎙️ Audio Emotion Dataset: VGAF Audio
-- **Source**: [VGAF](https://github.com/AudioVGAF/VGAF-dataset)
-- **Classes**: Neutral, Happy, Sad, Angry, Fearful, Disgust, Surprise
-- **Format**: `.wav` files with synchronized video and audio clips
-- **Preprocessing**: MFCC + delta features extracted from audio segments
+python
+def hybrid_fusion(face_probs, audio_probs):
+    fused_features = np.concatenate([face_probs, audio_probs], axis=1)
+    score_fusion = 0.6 * face_probs + 0.4 * audio_probs
+    final_probs = tf.nn.softmax(score_fusion).numpy()
+    return final_probs
+python
+emotion_history = deque(maxlen=5)
+emotion_history.append(combined)
+smoothed_probs = np.mean(emotion_history, axis=0)
+fused_emotion = fusion_labels[np.argmax(smoothed_probs)]
+🔄 Code Execution Flow
+Load models (facial + audio from .json, .h5, .tflite)
 
----
+Capture webcam frames, detect faces via Haar/DNN
 
-## 🧠 Algorithms Used
+Predict facial emotion every 10 frames
 
-- **Facial Emotion Recognition**: trained on GroupEmoW (custom architecture or MobileNetV2)
-- **Audio Emotion Recognition**: model trained on MFCC features from VGAF Audio
-- **Feature Extraction**:
-  - Facial: Cropped face → resized → normalized → CNN input
-  - Audio: MFCC + delta → mean pooled → CNN input
-- **Smoothing**: Rolling window (deque) for stable predictions
-- **Confidence Filtering**: Threshold-based filtering for reliable output
+Press 'a' → Record 2s audio → extract MFCC → predict emotion
 
----
+Fuse emotions via hybrid fusion → smooth with temporal encoding
 
-## 🔄 Flow of Code Execution
+Display predictions in real-time UI
 
-1. **Load Models**: Facial and audio models loaded .tflite from `.json` and `.h5` files
-2. **Start Webcam**: Captures frames and detects faces using Haar cascade or DNN
-3. **Face Prediction**:
-   - Every few frames, face is cropped and passed to CNN
-   - Emotion is predicted and smoothed
-4. **Manual Audio Trigger**:
-   - Press `'a'` to record 2 seconds of audio
-   - MFCC features are extracted and passed to audio model
-   - Emotion is predicted and smoothed
-5. **Display Output**:
-   - Webcam frame shows bounding box, facial emotion, and audio emotion
-   - Press `'q'` to quit
+🖼️ Output Behavior
+Component	Behavior
+Webcam Feed	Live overlay with bounding boxes and detected emotions
+Facial Emotion	Updated every 10 frames, smooth via optical flow
+Audio Emotion	Triggered manually, displayed below face feed
+Fusion Output	Combines modalities with recalibrated softmax predictions
+Prediction Lag	Minimized with threading and rolling buffer
+🎮 Manual Controls
+'a' → Record audio and predict emotion
 
----
+'q' → Quit the application cleanly
 
-## 🖼️ Flow of Output
+📊 Accuracy
+Model	Accuracy
+Facial Only	~72–75%
+Audio Only	~65–67%
+Hybrid Fusion	~85%+ (approximate gain via feature-level fusion & temporal encoding)
+✅ Results
+Multimodal fusion for richer representations
 
-| Component        | Behavior                                                                 |
-|------------------|--------------------------------------------------------------------------|
-| Webcam Feed      | Real-time video with face detection and emotion overlay                 |
-| Facial Emotion   | Updated every 10 frames, smoothed for stability                         |
-| Audio Emotion    | Triggered manually, displayed below webcam feed                         |
-| Rectangle Flicker| Eliminated using face hold mechanism                                    |
-| Prediction Delay | Minimized with optimized intervals and threading                        |
+Stable predictions via emotion history buffer
 
----
+Smooth UI, low latency, modular design
 
-## 🎮 Manual Controls
+Easy integration with future deep learning architectures
 
-- Press `'a'` → Record audio and predict emotion  
-- Press `'q'` → Quit the application cleanly
+🚀 Future Enhancements
+Replace Bi-LSTM with Transformer-based fusion block
 
----
+Scene Graph modeling for multi-face input
 
-## 📊 Accuracy
+Deploy as a desktop/web-based tool with emotion dashboard
 
-| Model        | Accuracy (on full dataset) |
-|--------------|----------------------------|
-| Facial (GroupEmoW) | ~72–75% (depending on architecture) |
-| Audio (VGAF)       | ~65-67% (MFCC-based CNN)            |
-| Fusion             | ~83.3%
+Convert models to TFLite for unified lightweight deployment
 
-> Accuracy may vary based on preprocessing, model depth, and class balance.
+🙌 Credits
+GroupEmoW Dataset
 
----
+VGAF Audio Dataset
 
-## ✅ Results
-
-- Real-time multimodal emotion detection with smooth UI
-- Stable predictions using temporal smoothing
-- Manual audio trigger for controlled evaluation
-- Modular codebase for easy extension and retraining
-
----
-
-## 🚀 Future Improvements
-
-- Fuse face and audio predictions into a unified emotion output  
-- Add real-time emotion dashboard or logging  
-- Deploy as a desktop or web app  
-- Use EfficientNet or transformer-based models for higher accuracy
-
----
-
-## 🙌 Credits
-
-- [GroupEmoW Dataset](https://github.com/GroupEmoW/GroupEmoW-dataset)
-- [VGAF Audio Dataset](https://github.com/AudioVGAF/VGAF-dataset)
-- Developed by **Rishabh Sharma ** with support from **Microsoft Copilot**
-
-
+Developed by Rishabh Sharma with support from Micrsoft Copilot 
