@@ -84,7 +84,7 @@ fused_emotion = fusion_labels[np.argmax(smoothed_probs)]
 |---------------|-------------------|
 | Facial Only   | ~72–75%           |
 | Audio Only    | ~65–67%           |
-| Hybrid Fusion | ~85%+ (approximate gain via fusion & encoding) |
+| Hybrid Fusion | ~84%+ (approximate gain via fusion & encoding) |
 
 ---
 
