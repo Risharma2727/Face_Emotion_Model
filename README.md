@@ -22,6 +22,90 @@ A real-time, multimodal emotion detection system combining facial expressions an
 | Audio    | VGAF Audio   | Neutral, Happy, Sad, Angry, Fearful, Disgust, Surprise | `.wav` → MFCC + delta features           |
 
 ---
+## 🔬 Methods
+
+We propose a multimodal deep learning framework for video-based group emotion recognition that integrates sentiment-aware keyframe extraction and dual attention mechanisms. The model fuses four distinct streams—**visual**, **audio**, **optical flow**, and **facial features**—to capture complementary emotional cues across modalities. Each stream is processed using pretrained convolutional backbones, and the final representation is obtained via feature-level fusion.
+
+---
+
+### 3.1 Keyframe Extraction Based on Sentiment Estimates
+
+To address the sparsity of emotionally salient frames in group videos, we implement a keyframe extraction algorithm that leverages sentiment estimates. A **ResNet-50** model fine-tuned on the **GroupEmoW** dataset is used to score frames based on emotional intensity across three categories: **positive**, **neutral**, and **negative**.
+
+- The highest scoring frame per second is selected.
+- Frames below a predefined sentiment threshold are discarded.
+- Candidate keyframes are ranked by sentiment score.
+- The frame with the highest interframe difference is selected per time slot.
+- If fewer than `N` keyframes are obtained, additional frames are added until the quota is met.
+
+**Training Parameters:**
+- Backbone: `ResNet-50` (ImageNet pretrained, fine-tuned on GroupEmoW)
+- Emotion categories: `Positive`, `Neutral`, `Negative`
+- Keyframe count: `N = 16`
+- Threshold: Tuned empirically
+
+---
+
+### 3.2 Visual Stream Feature Extraction
+
+Visual features are extracted using a **3D ResNet-101** pretrained on the **UCF101** dataset. Keyframes are passed through the network, and the resulting feature maps are enhanced using **spatial** and **channel attention** mechanisms.
+
+- **Spatial Attention:** 1×1 convolution + softmax to weight spatial regions.
+- **Channel Attention:** Transposed feature maps weighted to emphasize semantic channels.
+- Final visual representation is pooled from fused attention-weighted maps.
+
+**Training Parameters:**
+- Input resolution: `256×256` → random crop to `224×224`
+- Augmentation: `Horizontal flip`, `Random crop`
+- Optimizer: `SGD`
+- Batch size: `16`
+- Epochs: `100`
+- Learning rate: `0.01` (decayed by 10× every 20 epochs)
+
+---
+
+### 3.3 Audio, Optical Flow, and Face Feature Extraction
+
+#### 🎙️ Audio Stream
+- Convert audio to Mel-spectrogram using 128 Mel filter banks.
+- Extract features using `2D ResNet-101` pretrained on ImageNet.
+
+**Parameters:**
+- FFT window: `1024 samples`
+- Hop length: `512 samples`
+- Input size: `256×256` → crop to `224×224`
+- Epochs: `30`, Batch size: `32`, LR decay every 10 epochs
+
+#### 🌀 Optical Flow Stream
+- Compute x/y-direction flows using OpenCV from 8 evenly spaced frames.
+- Extract motion features using `3D ResNet-50`.
+
+**Parameters:**
+- Epochs: `50`, Batch size: `16`
+
+#### 👤 Face Stream
+- Detect faces using `MTCNN` with confidence filtering.
+- Extract features using `3D ResNet-50`.
+
+**Parameters:**
+- Faces per video: `16`
+- Epochs: `50`, Batch size: `16`
+
+---
+
+### 3.4 Feature Fusion and Classification
+
+Feature vectors from all four streams are concatenated and passed through a fully connected layer for final sentiment classification.
+
+**Fusion Details:**
+- Fusion type: `Feature-level concatenation`
+- Final classifier: `Fully connected layer + softmax`
+- Epochs: `100`, Batch size: `8`
+- Optimizer: `SGD`, LR decay every 20 epochs
+
+  
+
+
 
 ## 🧠 Algorithms
 
