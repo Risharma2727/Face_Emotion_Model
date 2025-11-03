@@ -25,6 +25,24 @@ A real-time, multimodal emotion detection system combining facial expressions an
 ## 🔬 Methods
 
 We propose a multimodal deep learning framework for video-based group emotion recognition that integrates sentiment-aware keyframe extraction and dual attention mechanisms. The model fuses four distinct streams—**visual**, **audio**, **optical flow**, and **facial features**—to capture complementary emotional cues across modalities. Each stream is processed using pretrained convolutional backbones, and the final representation is obtained via feature-level fusion.
+We replace traditional Bi-LSTM fusion with a Transformer-based fusion block that models cross-modal relationships between facial and audio features.
+
+Fusion Details:
+- Input: Face and audio probability vectors (shape: [1, 7])
+- Projection: Each vector is passed through a Dense layer to embed into a shared space (e.g., 128D)
+- Sequence Formation: Stacked as a 2-token sequence [face_emb; audio_emb]
+- Attention: Multi-head self-attention captures modality interactions
+- Feed-Forward: Refines fused representation
+- Pooling: Mean pooling over sequence
+- Classification: Final Dense layer with softmax
+
+Training Parameters:
+- Embedding dimension: 128
+- Attention heads: 4
+- Feed-forward dimension: 256
+- Dropout: 0.1 (optional)
+- Epochs: 100, Batch size: 8
+
 
 ---
 
@@ -109,13 +127,18 @@ Feature vectors from all four streams are concatenated and passed through a full
 
 ## 🧠 Algorithms
 
-- **Facial Emotion Recognition:** CNN (custom or MobileNetV2)
-- **Audio Emotion Recognition:** CNN on MFCC features
-- **Hybrid Fusion:**
-  - Feature-level: concatenated modality outputs
-  - Score-level: 60% facial + 40% audio weighting
-  - Final: Softmax smoothing
-- **Temporal Encoding:** Rolling buffer for history-based smoothing
+Facial Emotion Recognition: CNN (custom or MobileNetV2)
+Audio Emotion Recognition: CNN on MFCC features
+
+Transformer-Based Fusion:
+- Feature-level: Projected embeddings from face and audio
+- Cross-modal attention: Multi-head self-attention over stacked embeddings
+- Final classifier: Dense layer over pooled transformer output
+
+Temporal Encoding:
+- Rolling buffer for history-based smoothing
+- Optional score-level fusion for calibration
+
 
 ```python
 def hybrid_fusion(face_probs, audio_probs):
